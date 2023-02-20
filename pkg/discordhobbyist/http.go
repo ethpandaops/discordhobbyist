@@ -3,7 +3,7 @@ package discordhobbyist
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -31,6 +31,7 @@ func (h *HTTPServer) Start(addr string) error {
 		return err
 	}
 
+	//nolint:gosec // don't really care about this
 	return http.ListenAndServe(addr, h.router)
 }
 
@@ -48,17 +49,20 @@ func (h *HTTPServer) wrappedHandler(handler func(ctx context.Context, r *http.Re
 			"path":   r.URL.Path,
 		})
 
+		defer r.Body.Close()
+
 		resp, err := handler(ctx, r, ps)
 		if err != nil {
 			logCtx.WithError(err).Error("error handling request")
 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+
 			return
 		}
 
-		w.WriteHeader(resp.StatusCode)
+		defer resp.Body.Close()
 
-		return
+		w.WriteHeader(resp.StatusCode)
 	}
 }
 
@@ -69,26 +73,26 @@ func (h *HTTPServer) handleChannelRequest(ctx context.Context, r *http.Request, 
 
 	body := []byte(r.FormValue("payload_json"))
 
-	errors := make([]error, 0)
+	allErrors := make([]error, 0)
 
 	for _, callback := range h.channelRequestCallbacks {
 		err := callback(ctx, ps, body)
 		if err != nil {
-			errors = append(errors, err)
+			allErrors = append(allErrors, err)
 
 			h.log.WithError(err).Error("error handling channel request")
 		}
 	}
 
-	if len(errors) > 0 {
+	if len(allErrors) > 0 {
 		return &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(nil),
-		}, errors[0]
+			Body:       io.NopCloser(nil),
+		}, allErrors[0]
 	}
 
 	return &http.Response{
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(nil),
+		Body:       io.NopCloser(nil),
 	}, nil
 }

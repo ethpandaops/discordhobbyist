@@ -27,7 +27,7 @@ type GrafanaWebhook struct {
 	Version           string                `json:"version"`
 	GroupKey          string                `json:"groupKey"`
 	TruncatedAlerts   int                   `json:"truncatedAlerts"`
-	OrgId             int                   `json:"orgId"`
+	OrgID             int                   `json:"orgId"`
 	Title             string                `json:"title"`
 	State             string                `json:"state"`
 	Message           string                `json:"message"`

@@ -40,9 +40,9 @@ func (d *DiscordAlertWebhook) GetImage() (string, error) {
 }
 
 type DiscordCustomContent struct {
-	Status   string         `json:"status"`
-	Receiver string         `json:"receiver"`
-	Alerts   []DiscordAlert `json:"alerts"`
+	Status   string          `json:"status"`
+	Receiver string          `json:"receiver"`
+	Alerts   []*DiscordAlert `json:"alerts"`
 }
 
 type DiscordAlert struct {
@@ -61,6 +61,7 @@ type DiscordAlert struct {
 
 func (d *DiscordCustomContent) UnmarshalJSON(b []byte) error {
 	type Alias DiscordCustomContent
+
 	var alias Alias
 
 	re := regexp.MustCompile(`,\s*([\]}])`)
@@ -78,6 +79,7 @@ func (d *DiscordCustomContent) UnmarshalJSON(b []byte) error {
 
 	// Parse the JSON string into a map
 	var data map[string]interface{}
+
 	err = json.Unmarshal(b, &data)
 	if err != nil {
 		return err
@@ -113,7 +115,7 @@ func ParseAsDiscordWebhook(body []byte) (*DiscordAlertWebhook, error) {
 	return &webhook, nil
 }
 
-func CreateNewMessageFromGrafanaWebhookAlert(webhook DiscordAlertWebhook, alert DiscordAlert) *discordgo.MessageSend {
+func CreateNewMessageFromGrafanaWebhookAlert(webhook *DiscordAlertWebhook, alert *DiscordAlert) *discordgo.MessageSend {
 	color := 5763719
 	if alert.Status == "firing" {
 		color = 15548997

@@ -22,7 +22,7 @@ var rootCmd = &cobra.Command{
 			BotToken:      os.Getenv("BOT_TOKEN"),
 			AppID:         os.Getenv("APP_ID"),
 			InfoChannelID: os.Getenv("INFO_CHANNEL_ID"),
-			HttpAddr:      os.Getenv("HTTP_ADDR"),
+			HTTPAddr:      os.Getenv("HTTP_ADDR"),
 		}
 
 		hobbyist := discordhobbyist.NewDiscordBot(log, config)
@@ -38,7 +38,9 @@ var rootCmd = &cobra.Command{
 		<-sc
 
 		// Cleanly close down the Discord session.
-		hobbyist.Stop()
+		if err := hobbyist.Stop(); err != nil {
+			log.WithError(err).Fatal("error stopping bot")
+		}
 	},
 }
 

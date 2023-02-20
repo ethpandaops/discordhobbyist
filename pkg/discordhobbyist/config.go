@@ -9,7 +9,7 @@ type Config struct {
 
 	InfoChannelID string
 
-	HttpAddr string
+	HTTPAddr string
 }
 
 func (c *Config) Validate() error {
@@ -29,7 +29,7 @@ func (c *Config) Validate() error {
 		return errors.New("info channel id is required")
 	}
 
-	if c.HttpAddr == "" {
+	if c.HTTPAddr == "" {
 		return errors.New("http addr is required")
 	}
 

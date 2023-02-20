@@ -54,7 +54,7 @@ func (d *DiscordBot) Start() error {
 
 	d.log.Info("Connected to discord")
 
-	if err := d.http.Start(d.config.HttpAddr); err != nil {
+	if err := d.http.Start(d.config.HTTPAddr); err != nil {
 		return err
 	}
 
@@ -73,6 +73,7 @@ func (d *DiscordBot) Channels() (map[string]*discordgo.Channel, error) {
 		}
 
 		groups := make(map[string]*discordgo.Channel)
+
 		for _, channel := range channels {
 			if channel.Type != discordgo.ChannelTypeGuildCategory {
 				continue
@@ -132,7 +133,7 @@ func (d *DiscordBot) handleChannelRequest(ctx context.Context, params httprouter
 
 	for _, alert := range webhook.Content.Alerts {
 		// Send the request body to the channel
-		payload := CreateNewMessageFromGrafanaWebhookAlert(*webhook, alert)
+		payload := CreateNewMessageFromGrafanaWebhookAlert(webhook, alert)
 
 		_, err := d.session.ChannelMessageSendComplex(channel.ID, payload)
 		if err != nil {
@@ -140,7 +141,6 @@ func (d *DiscordBot) handleChannelRequest(ctx context.Context, params httprouter
 
 			return errors.New("error sending message to channel")
 		}
-
 	}
 
 	return nil
