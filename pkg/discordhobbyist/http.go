@@ -67,11 +67,27 @@ func (h *HTTPServer) wrappedHandler(handler func(ctx context.Context, r *http.Re
 }
 
 func (h *HTTPServer) handleChannelRequest(ctx context.Context, r *http.Request, ps httprouter.Params) (*http.Response, error) {
-	if err := r.ParseMultipartForm(0); err != nil {
-		return nil, errors.New("error parsing multipart form")
-	}
+	//nolint:staticcheck // false positive
+	body := []byte{}
 
-	body := []byte(r.FormValue("payload_json"))
+	if r.Header.Get("Content-Type") == "application/json" {
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.log.WithError(err).Error("error reading request body")
+
+			return nil, errors.New("error reading request body")
+		}
+
+		body = b
+	} else {
+		if err := r.ParseMultipartForm(0); err != nil {
+			h.log.WithError(err).Error("error reading multipart form")
+
+			return nil, errors.New("error parsing multipart form")
+		}
+
+		body = []byte(r.FormValue("payload_json"))
+	}
 
 	allErrors := make([]error, 0)
 
