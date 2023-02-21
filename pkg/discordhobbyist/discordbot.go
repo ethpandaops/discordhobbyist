@@ -163,7 +163,10 @@ func (d *DiscordBot) handleChannelRequest(ctx context.Context, params httprouter
 			}
 
 			// We'll still send the resolved message just without the reference to the original
-			d.log.WithError(err).Warn("error finding original firing message with fingerprint")
+			d.log.
+				WithError(err).
+				WithField("fingerprint", alert.Fingerprint).
+				Warn("error finding original firing message with fingerprint")
 		}
 
 		_, err := d.session.ChannelMessageSendComplex(channel.ID, payload)
@@ -184,13 +187,20 @@ func (d *DiscordBot) FindFiringAlertMessageWithFingerprint(ctx context.Context, 
 	}
 
 	for _, message := range messages {
-		// Ignore messages that are not from the us
-		if message.Author.ID != d.session.State.User.ID {
-			continue
+		foundContent := false
+
+		for _, embed := range message.Embeds {
+			// Ignore messages that are not alerts that are firing
+			if !strings.Contains(strings.ToLower(embed.Title), "firing") {
+				continue
+			}
+
+			foundContent = true
+
+			break
 		}
 
-		// Ignore messages that are not alerts that are firing
-		if !strings.Contains(strings.ToLower(message.Content), "firing") {
+		if !foundContent {
 			continue
 		}
 
