@@ -7,7 +7,7 @@ type Config struct {
 	BotToken string
 	AppID    string
 
-	InfoChannelID string
+	InfoChannelKey string
 
 	HTTPAddr string
 }
@@ -25,8 +25,8 @@ func (c *Config) Validate() error {
 		return errors.New("app id is required")
 	}
 
-	if c.InfoChannelID == "" {
-		return errors.New("info channel id is required")
+	if c.InfoChannelKey == "" {
+		return errors.New("info channel key is required")
 	}
 
 	if c.HTTPAddr == "" {

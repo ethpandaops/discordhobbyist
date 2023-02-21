@@ -3,6 +3,7 @@ package discordhobbyist
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -117,16 +118,28 @@ func (d *DiscordBot) handleChannelRequest(ctx context.Context, params httprouter
 		return err
 	}
 
-	channel, ok := channels[GetChannelKey(params.ByName("group"), params.ByName("channel"))]
+	key := GetChannelKey(params.ByName("group"), params.ByName("channel"))
+
+	channel, ok := channels[key]
 	if !ok {
 		d.log.Error("no route found for path")
+
+		err = d.CreateInfoMessage(ctx, fmt.Sprintf("no route found for path %s. Is there a typo in the configured URL?", key))
+		if err != nil {
+			d.log.WithError(err).Error("error sending info message")
+		}
 
 		return errors.New("no route found for path")
 	}
 
 	webhook, err := ParseAsDiscordWebhook(body)
 	if err != nil {
-		d.log.WithError(err).Error("error parsing request body as discord webhook")
+		d.log.WithError(err).WithField("body", string(body)).Error("error parsing request body as discord webhook")
+
+		err := d.CreateInfoMessage(ctx, "An invalid payload was sent to the webhook. Please check the webhook configuration in Grafana, and logs for Discordhobbyist for the full payload.")
+		if err != nil {
+			d.log.WithError(err).Error("error sending info message")
+		}
 
 		return errors.New("error parsing request body as discord webhook")
 	}
@@ -141,6 +154,25 @@ func (d *DiscordBot) handleChannelRequest(ctx context.Context, params httprouter
 
 			return errors.New("error sending message to channel")
 		}
+	}
+
+	return nil
+}
+
+func (d *DiscordBot) CreateInfoMessage(ctx context.Context, msg string) error {
+	channels, err := d.Channels()
+	if err != nil {
+		return err
+	}
+
+	channel, ok := channels[d.config.InfoChannelKey]
+	if !ok {
+		return errors.New("no route found for info channel")
+	}
+
+	_, err = d.session.ChannelMessageSend(channel.ID, msg)
+	if err != nil {
+		return err
 	}
 
 	return nil
