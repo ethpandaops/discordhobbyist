@@ -18,11 +18,11 @@ var rootCmd = &cobra.Command{
 		log := logrus.New()
 
 		config := &discordhobbyist.Config{
-			GuildID:       os.Getenv("GUILD_ID"),
-			BotToken:      os.Getenv("BOT_TOKEN"),
-			AppID:         os.Getenv("APP_ID"),
-			InfoChannelID: os.Getenv("INFO_CHANNEL_ID"),
-			HTTPAddr:      os.Getenv("HTTP_ADDR"),
+			GuildID:        os.Getenv("GUILD_ID"),
+			BotToken:       os.Getenv("BOT_TOKEN"),
+			AppID:          os.Getenv("APP_ID"),
+			InfoChannelKey: os.Getenv("INFO_CHANNEL_KEY"),
+			HTTPAddr:       os.Getenv("HTTP_ADDR"),
 		}
 
 		hobbyist := discordhobbyist.NewDiscordBot(log, config)
