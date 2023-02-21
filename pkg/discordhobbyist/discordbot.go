@@ -135,6 +135,24 @@ func (d *DiscordBot) handleChannelRequest(ctx context.Context, params httprouter
 		// Send the request body to the channel
 		payload := CreateNewMessageFromGrafanaWebhookAlert(webhook, alert)
 
+		// Check if the channel already contains a message with the same fingerprint
+		if strings.EqualFold(alert.Status, "resolved") {
+			firingMessage, err := d.FindFiringAlertMessageWithFingerprint(ctx, channel, alert.Fingerprint)
+			if err == nil {
+				// Add a reply to the original message
+				_, err = d.session.ChannelMessageSendEmbedsReply(channel.ID, payload.Embeds, firingMessage.Reference())
+				if err == nil {
+					continue
+				}
+
+				// This sucks but we'll just send the resolved message without the reference to the original
+				d.log.WithError(err).Error("error sending reply resolved message to channel")
+			}
+
+			// We'll still send the resolved message just without the reference to the original
+			d.log.WithError(err).Warn("error finding original firing message with fingerprint")
+		}
+
 		_, err := d.session.ChannelMessageSendComplex(channel.ID, payload)
 		if err != nil {
 			d.log.WithError(err).Error("error sending message to channel")
@@ -144,4 +162,34 @@ func (d *DiscordBot) handleChannelRequest(ctx context.Context, params httprouter
 	}
 
 	return nil
+}
+
+func (d *DiscordBot) FindFiringAlertMessageWithFingerprint(ctx context.Context, channel *discordgo.Channel, fingerprint string) (*discordgo.Message, error) {
+	messages, err := d.session.ChannelMessages(channel.ID, 100, "", "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, message := range messages {
+		// Ignore messages that are not from the us
+		if message.Author.ID != d.session.State.User.ID {
+			continue
+		}
+
+		// Ignore messages that are not alerts that are firing
+		if !strings.Contains(strings.ToLower(message.Content), "firing") {
+			continue
+		}
+
+		// Inspect the embeds for the fingerprint
+		for _, embed := range message.Embeds {
+			for _, field := range embed.Fields {
+				if field.Name == "Fingerprint" && field.Value == fingerprint {
+					return message, nil
+				}
+			}
+		}
+	}
+
+	return nil, errors.New("channel does not contain a valid message with the specified fingerprint")
 }

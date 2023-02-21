@@ -163,10 +163,18 @@ func CreateNewMessageFromGrafanaWebhookAlert(webhook *DiscordAlertWebhook, alert
 		})
 	}
 
+	if alert.Fingerprint != "" {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Fingerprint",
+			Value:  alert.Fingerprint,
+			Inline: true,
+		})
+	}
+
 	message := &discordgo.MessageSend{
 		Embeds: []*discordgo.MessageEmbed{
 			{
-				Title:       alert.Labels["alertname"] + " - (" + strings.ToUpper(alert.Status) + ")",
+				Title:       alert.Labels["alertname"] + " - " + strings.ToUpper(alert.Status),
 				Description: alert.Annotations["description"],
 				Color:       color,
 				Footer: &discordgo.MessageEmbedFooter{
